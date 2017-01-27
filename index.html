@@ -1,0 +1,100 @@
+<html>
+  <head>
+    <title>Wormbites</title>
+    <script type="text/javascript" src="SnakeGame.js"></script>
+    <script type="text/javascript" src="SnakeLevel.js"></script>
+    <script type="text/javascript" src="SnakeLevelCanvas.js"></script>
+    <script type="text/javascript" src="index.js"></script>
+    <link rel="stylesheet" type="text/css" href="index.css" />
+  </head>
+  <body>
+    <form id="formInit">
+      <div>
+        <label for="txtName">Name:</label>
+        <input id="txtName" type="text" value="" />
+      </div>
+      <div>
+        <label for="selSideLength">Size:</label>
+        <select id="selSideLength">
+          <option value="15">15 &times; 15</option>
+          <option value="16">16 &times; 16</option>
+          <option value="17">17 &times; 17</option>
+          <option value="18">18 &times; 18</option>
+          <option value="19">19 &times; 19</option>
+          <option value="20">20 &times; 20</option>
+          <option value="21">21 &times; 21</option>
+        </select>
+      </div>
+      <div>
+        <label for="selGrowthRate">Growth Rate:</label>
+        <select id="selGrowthRate">
+          <option value="1,1">Grow 1 for every 1</option>
+          <option value="1,2">Grow 1 for every 2</option>
+          <option value="1,3">Grow 1 for every 3</option>
+          <option value="2,3">Grow 2 for every 3</option>
+          <option value="3,4">Grow 3 for every 4</option>
+          <option value="2,5">Grow 2 for every 5</option>
+          <option value="3,5">Grow 3 for every 5</option>
+          <option value="4,5">Grow 4 for every 5</option>
+          <option value="5,6">Grow 5 for every 6</option>
+          <option value="3,7">Grow 3 for every 7</option>
+          <option value="4,7">Grow 4 for every 7</option>
+          <option value="5,7">Grow 5 for every 7</option>
+          <option value="6,7">Grow 6 for every 7</option>
+        </select>
+      </div>
+      <div>
+        <label for="selLength">Snake Size:</label>
+        <select id="selLength">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+        </select>
+      </div>
+      <div>
+        <input type="submit" value="Update Level" />
+      </div>
+    </form>
+
+    <div>
+      <div id="divToolGrass" class="tool_wrap">
+        <div class="image_wrap"><img id="imgGrass" /></div>
+        <div class="text">Grass</div>
+      </div>
+
+      <div id="divToolSnake" class="tool_wrap">
+        <div class="image_wrap"><img id="imgSnake" /></div>
+        <div class="text">Worm</div>
+      </div>
+
+      <div id="divToolFood" class="tool_wrap">
+        <div class="image_wrap"><img id="imgFood" /></div>
+        <div class="text">Food</div>
+      </div>
+
+      <div id="divToolPill" class="tool_wrap">
+        <div class="image_wrap"><img id="imgPill" /></div>
+        <div class="text">Pill</div>
+      </div>
+
+      <div id="divToolWall" class="tool_wrap">
+        <div class="image_wrap"><img id="imgWall" /></div>
+        <div class="text">Wall</div>
+      </div>
+
+      <div id="divToolDeadlyWall" class="tool_wrap">
+        <div class="image_wrap"><img id="imgDeadlyWall" /></div>
+        <div class="text">Deadly Wall</div>
+      </div>
+    </div>
+
+    <div id="canvasPlaceholder"></div>
+  </body>
+</html>

@@ -1,5 +1,6 @@
 function SnakeLevel(obj) {
   this.fromObject(obj);
+  this._handlers = { snakeMove: [], playabilityChange: [], resize: [] };
 }
 
 SnakeLevel.validateBlockChars = function(str, opt_throwErrorOnFailure) {
@@ -17,12 +18,21 @@ SnakeLevel.validateBlockChars = function(str, opt_throwErrorOnFailure) {
 }
 
 SnakeLevel.validateEventName = function(eventName, opt_throwErrorOnFailure) {
-  var valid = /^(snakeMove|playabilityChange)$/.test(eventName);
+  var valid = /^(snakeMove|playabilityChange|resize)$/.test(eventName);
   if (!valid && opt_throwErrorOnFailure) {
     throw new Error('"' + eventName + '" is not a valid SnakeLevel event name');
   }
   return valid;
 }
+
+SnakeLevel.getBlankMap = function(sideLength) {
+  if (15 > sideLength || sideLength > 21 || ~~sideLength != sideLength) {
+    throw new Error('side length of map must be an integer in the range of 15 to 21');
+  }
+
+  for (var map = '', i = sideLength * sideLength; i--; map += ' ');
+  return map;
+};
 
 SnakeLevel.VALID_GROWTH_RATIOS = '[1,1],[1,2],[1,3],[2,3],[3,4],[2,5],[3,5],[4,5],[5,6],[3,7],[4,7],[5,7],[6,7]';
 
@@ -30,7 +40,7 @@ SnakeLevel.prototype = {
   fromObject: function(o) {
     o = Object(o);
     this.setName(o.name);
-    this.setMap(o.map);
+    this.setMap(o.sideLength ? SnakeLevel.getBlankMap(o.sideLength) : o.map);
     this.setLength(o.length);
     this.setGrowthRate(o.growthRate);
     if (o.solution) {
@@ -49,8 +59,8 @@ SnakeLevel.prototype = {
   },
 
   setName: function(newName) {
-    if (('string' != typeof newName) || (newName = newName.trim()) == '') {
-      throw new Error('name must be a non-empty string');
+    if ('string' != typeof newName) {
+      throw new Error('name must be a string');
     }
     this._name = newName;
   },
@@ -68,13 +78,40 @@ SnakeLevel.prototype = {
     if (sideLength != ~~sideLength || 15 > sideLength || sideLength > 21) {
       throw new Error('map can only be 15\xD715, 16\xD716, 17\xD717, 18\xD718, 19\xD719, 20\xD720, or 21\xD721');
     }
+
+    var prevMap = this._map, prevSideLen = this._sideLength, wasPlayable = !!prevMap && this.isPlayable();
+
     SnakeLevel.validateBlockChars(newMap, true);
 
-    if (this._map && this._map != newMap) {
+    if (prevMap && prevMap != newMap) {
       delete this._solution;
     }
     this._map = newMap;
     this._sideLength = sideLength;
+
+    if (this.isPlayable() != wasPlayable) {
+      this._trigger('playabilityChange', {});
+    }
+
+    if (prevSideLen && prevSideLen != sideLength) {
+      var prevSnakeIndex = prevMap.indexOf('S'),
+          snakeIndex = newMap.indexOf('S');
+      if (prevSnakeIndex && prevSnakeIndex != snakeIndex) {
+        this._trigger('snakeMove', {
+          prevX: prevSnakeIndex % prevSideLen,
+          prevY: ~~(prevSnakeIndex / prevSideLen),
+          prevPosition: prevSnakeIndex,
+          x: snakeIndex % sideLength,
+          y: ~~(snakeIndex / sideLength),
+          position: snakeIndex
+        });
+      }
+
+      this._trigger('resize', {
+        prevSideLength: prevSideLen,
+        sideLength: sideLength
+      });
+    }
   },
 
   getMap: function(opt_drawWithNewLines) {
@@ -84,7 +121,7 @@ SnakeLevel.prototype = {
   },
 
   setLength: function(newLength) {
-    if (('number' != typeof newLength) || 1 > newLength || newLength > 10) {
+    if (newLength != ~~newLength || 1 > newLength || newLength > 10) {
       throw new Error('length must be an integer between 1 and 10');
     }
     this._length = newLength;
@@ -151,7 +188,7 @@ SnakeLevel.prototype = {
       this._map = this._map.slice(0, position) + blockChar + this._map.slice(position + 1);
 
       if (isPlayable != this.isPlayable()) {
-        events.push(['playabilityChange']);
+        events.push(['playabilityChange', {}]);
       }
 
       // Trigger any events that happened
@@ -174,10 +211,50 @@ SnakeLevel.prototype = {
   },
 
   isPlayable: function() {
-    return this.hasSnake() && this.getFoodCount() > 0;
+    return this.getFoodCount() > 0;
   },
+
   clone: function() {
     return new SnakeLevel(this.toObject());
+  },
+
+  clear: function() {
+    this.setMap(this._map.replace(/[\s\S]/g, ' '));
+  },
+
+  offset: function(offsetX, offsetY) {
+    var sideLength = this._sideLength, newMap = this._map;
+    if (offsetX = ~~((-offsetX % sideLength) + sideLength) % sideLength) {
+      newMap = newMap.replace(new RegExp('([\\s\\S]{' + offsetX + '})([\\s\\S]{' + (sideLength - offsetX) + '})', 'g'), '$2$1');
+    }
+    if (offsetY = ~~((-offsetY % sideLength) + sideLength) % sideLength) {
+      newMap = newMap.slice(offsetY * sideLength) + newMap.slice(0, offsetY * sideLength);
+    }
+    this.setMap(newMap);
+  },
+
+  resize: function(newSideLength) {
+    if (~~newSideLength != newSideLength || 15 > newSideLength || newSideLength > 21) {
+      throw new Error('side length of map must be an integer in the range of 15 to 21');
+    }
+
+    var prevSideLen = this._sideLength,
+        diff = newSideLength - prevSideLen;
+
+    if (diff) {
+      this.setMap(
+        diff > 0
+          ? this._map.replace(new RegExp('[\\s\\S]{' + prevSideLen + '}', 'g'), '$&' + Array(diff + 1).join(' '))
+            + Array(diff * newSideLength + 1).join(' ')
+          : this._map
+            .slice(0, newSideLength * prevSideLen)
+            .replace(new RegExp('([\\s\\S]{' + newSideLength + '})[\\s\\S]{' + diff + '}', 'g'), '$1')
+      );
+    }
+  },
+
+  fillWithFood: function() {
+    this.setMap(this._map.replace(/ /g, 'F'));
   },
 
   bind: function(eventName, handler) {
@@ -186,10 +263,10 @@ SnakeLevel.prototype = {
   },
 
   _trigger: function(eventName, objEvent) {
-    var game = this;
+    var level = this;
     objEvent.type = eventName;
     objEvent.timeStamp = +new Date;
-    game._handlers[eventName].forEach(function(handler) {
+    level._handlers[eventName].forEach(function(handler) {
       handler.call(game, objEvent);
     });
   },
